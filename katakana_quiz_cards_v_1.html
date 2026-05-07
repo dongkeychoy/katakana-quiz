@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>가타카나 50음도 랜덤 퀴즈</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f6fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2937;
+      padding: 16px;
+    }
+    .app {
+      width: 100%;
+      max-width: 520px;
+      background: white;
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+      text-align: center;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .desc {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #6b7280;
+      margin-bottom: 18px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 12px;
+    }
+    .card {
+      min-height: 360px;
+      border: 2px solid #e5e7eb;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #ffffff, #f8fbff);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card:active {
+      transform: scale(0.99);
+    }
+    .step {
+      font-size: 15px;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+    .big {
+      font-size: 128px;
+      line-height: 1;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    .romaji {
+      font-size: 24px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .word {
+      font-size: 34px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .wordSub {
+      font-size: 17px;
+      line-height: 1.5;
+      color: #4b5563;
+      margin-bottom: 18px;
+    }
+    .img {
+      width: 170px;
+      height: 170px;
+      border-radius: 26px;
+      background: #eef2ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 82px;
+      margin-bottom: 16px;
+    }
+    .hint {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #6b7280;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 12px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      background: #111827;
+      color: white;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.sub {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button.sound {
+      grid-column: 1 / 3;
+      background: #2563eb;
+    }
+    .note {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #6b7280;
+      margin-top: 14px;
+    }
+    @media (max-width: 480px) {
+      body { align-items: flex-start; }
+      .app { padding: 20px; border-radius: 22px; }
+      .big { font-size: 104px; }
+      .card { min-height: 330px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="title">가타카나 랜덤 퀴즈</div>
+    <div class="desc">가타카나를 먼저 보고 읽어본 뒤 클릭하세요.<br>다시 클릭하면 히라가나, 한 번 더 클릭하면 단어와 이미지가 나옵니다.</div>
+
+    <div class="topbar">
+      <span id="count">1 / 46</span>
+      <span id="mode">가타카나 보기</span>
+    </div>
+
+    <section class="card" id="card" onclick="nextStep()">
+      <div class="step" id="step">이 가타카나는 어떻게 읽을까?</div>
+      <div class="big" id="big">ア</div>
+      <div class="hint" id="hint">클릭해서 히라가나를 확인하세요.</div>
+    </section>
+
+    <div class="buttons">
+      <button class="sound" onclick="event.stopPropagation(); playSound();">일본어 발음 듣기</button>
+      <button class="sub" onclick="event.stopPropagation(); shuffleCards();">다시 섞기</button>
+      <button onclick="event.stopPropagation(); nextCard();">다음 카드</button>
+    </div>
+
+    <div class="note">모바일에서는 자동재생이 제한될 수 있어 “일본어 발음 듣기” 버튼을 누르는 방식이 가장 안정적입니다.</div>
+  </main>
+
+  <script>
+    const originalCards = [
+      {k:'ア',h:'あ',r:'a',w:'アイス',wh:'あいす',m:'아이스크림',e:'🍦'},
+      {k:'イ',h:'い',r:'i',w:'インク',wh:'いんく',m:'잉크',e:'🖊️'},
+      {k:'ウ',h:'う',r:'u',w:'ウサギ',wh:'うさぎ',m:'토끼',e:'🐰'},
+      {k:'エ',h:'え',r:'e',w:'エアコン',wh:'えあこん',m:'에어컨',e:'❄️'},
+      {k:'オ',h:'お',r:'o',w:'オレンジ',wh:'おれんじ',m:'오렌지',e:'🍊'},
+      {k:'カ',h:'か',r:'ka',w:'カメラ',wh:'かめら',m:'카메라',e:'📷'},
+      {k:'キ',h:'き',r:'ki',w:'キウイ',wh:'きうい',m:'키위',e:'🥝'},
+      {k:'ク',h:'く',r:'ku',w:'クッキー',wh:'くっきー',m:'쿠키',e:'🍪'},
+      {k:'ケ',h:'け',r:'ke',w:'ケーキ',wh:'けーき',m:'케이크',e:'🍰'},
+      {k:'コ',h:'こ',r:'ko',w:'コップ',wh:'こっぷ',m:'컵',e:'🥤'},
+      {k:'サ',h:'さ',r:'sa',w:'サラダ',wh:'さらだ',m:'샐러드',e:'🥗'},
+      {k:'シ',h:'し',r:'shi',w:'シール',wh:'しーる',m:'스티커',e:'🏷️'},
+      {k:'ス',h:'す',r:'su',w:'スープ',wh:'すーぷ',m:'수프',e:'🍲'},
+      {k:'セ',h:'せ',r:'se',w:'セーター',wh:'せーたー',m:'스웨터',e:'🧥'},
+      {k:'ソ',h:'そ',r:'so',w:'ソファ',wh:'そふぁ',m:'소파',e:'🛋️'},
+      {k:'タ',h:'た',r:'ta',w:'タオル',wh:'たおる',m:'수건',e:'🧺'},
+      {k:'チ',h:'ち',r:'chi',w:'チーズ',wh:'ちーず',m:'치즈',e:'🧀'},
+      {k:'ツ',h:'つ',r:'tsu',w:'ツナ',wh:'つな',m:'참치',e:'🐟'},
+      {k:'テ',h:'て',r:'te',w:'テレビ',wh:'てれび',m:'텔레비전',e:'📺'},
+      {k:'ト',h:'と',r:'to',w:'トマト',wh:'とまと',m:'토마토',e:'🍅'},
+      {k:'ナ',h:'な',r:'na',w:'ナイフ',wh:'ないふ',m:'나이프',e:'🔪'},
+      {k:'ニ',h:'に',r:'ni',w:'ニュース',wh:'にゅーす',m:'뉴스',e:'📰'},
+      {k:'ヌ',h:'ぬ',r:'nu',w:'ヌードル',wh:'ぬーどる',m:'누들',e:'🍜'},
+      {k:'ネ',h:'ね',r:'ne',w:'ネクタイ',wh:'ねくたい',m:'넥타이',e:'👔'},
+      {k:'ノ',h:'の',r:'no',w:'ノート',wh:'のーと',m:'노트',e:'📓'},
+      {k:'ハ',h:'は',r:'ha',w:'ハンバーガー',wh:'はんばーがー',m:'햄버거',e:'🍔'},
+      {k:'ヒ',h:'ひ',r:'hi',w:'ヒーター',wh:'ひーたー',m:'히터',e:'🔥'},
+      {k:'フ',h:'ふ',r:'fu',w:'フォーク',wh:'ふぉーく',m:'포크',e:'🍴'},
+      {k:'ヘ',h:'へ',r:'he',w:'ヘリコプター',wh:'へりこぷたー',m:'헬리콥터',e:'🚁'},
+      {k:'ホ',h:'ほ',r:'ho',w:'ホテル',wh:'ほてる',m:'호텔',e:'🏨'},
+      {k:'マ',h:'ま',r:'ma',w:'マスク',wh:'ますく',m:'마스크',e:'😷'},
+      {k:'ミ',h:'み',r:'mi',w:'ミルク',wh:'みるく',m:'우유',e:'🥛'},
+      {k:'ム',h:'む',r:'mu',w:'ムービー',wh:'むーびー',m:'영화',e:'🎬'},
+      {k:'メ',h:'め',r:'me',w:'メロン',wh:'めろん',m:'멜론',e:'🍈'},
+      {k:'モ',h:'も',r:'mo',w:'モニター',wh:'もにたー',m:'모니터',e:'🖥️'},
+      {k:'ヤ',h:'や',r:'ya',w:'ヤクルト',wh:'やくると',m:'야쿠르트',e:'🥤'},
+      {k:'ユ',h:'ゆ',r:'yu',w:'ユニフォーム',wh:'ゆにふぉーむ',m:'유니폼',e:'👕'},
+      {k:'ヨ',h:'よ',r:'yo',w:'ヨーグルト',wh:'よーぐると',m:'요구르트',e:'🥛'},
+      {k:'ラ',h:'ら',r:'ra',w:'ラーメン',wh:'らーめん',m:'라면',e:'🍜'},
+      {k:'リ',h:'り',r:'ri',w:'リモコン',wh:'りもこん',m:'리모컨',e:'🎛️'},
+      {k:'ル',h:'る',r:'ru',w:'ルール',wh:'るーる',m:'규칙',e:'📏'},
+      {k:'レ',h:'れ',r:'re',w:'レモン',wh:'れもん',m:'레몬',e:'🍋'},
+      {k:'ロ',h:'ろ',r:'ro',w:'ロボット',wh:'ろぼっと',m:'로봇',e:'🤖'},
+      {k:'ワ',h:'わ',r:'wa',w:'ワイン',wh:'わいん',m:'와인',e:'🍷'},
+      {k:'ヲ',h:'を',r:'wo',w:'ヲタク',wh:'をたく',m:'오타쿠',e:'🎮'},
+      {k:'ン',h:'ん',r:'n',w:'パン',wh:'ぱん',m:'빵',e:'🥖'}
+    ];
+
+    let cards = [];
+    let index = 0;
+    let step = 0;
+
+    const count = document.getElementById('count');
+    const mode = document.getElementById('mode');
+    const stepEl = document.getElementById('step');
+    const big = document.getElementById('big');
+    const hint = document.getElementById('hint');
+
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function render() {
+      const c = cards[index];
+      count.textContent = `${index + 1} / ${cards.length}`;
+
+      if (step === 0) {
+        mode.textContent = '가타카나 보기';
+        stepEl.textContent = '이 가타카나는 어떻게 읽을까?';
+        big.textContent = c.k;
+        big.className = 'big';
+        hint.innerHTML = '먼저 소리 내서 읽고 클릭하세요.';
+      } else if (step === 1) {
+        mode.textContent = '히라가나 확인';
+        stepEl.textContent = '히라가나로 확인하기';
+        big.textContent = c.h;
+        big.className = 'big';
+        hint.innerHTML = `<div class="romaji">${c.r}</div>가타카나 ${c.k} = 히라가나 ${c.h}`;
+      } else {
+        mode.textContent = '단어 연결';
+        stepEl.textContent = `${c.k} 로 시작하는 단어`;
+        big.className = '';
+        big.innerHTML = `
+          <div class="img">${c.e}</div>
+          <div class="word">${c.w}</div>
+          <div class="wordSub">히라가나: ${c.wh}<br>뜻: ${c.m}<br>읽기: ${c.r}</div>
+        `;
+        hint.textContent = '단어 발음도 들어보고 다음 카드로 넘어가세요.';
+      }
+    }
+
+    function nextStep() {
+      if (step < 2) {
+        step++;
+        render();
+      } else {
+        nextCard();
+      }
+    }
+
+    function nextCard() {
+      index = (index + 1) % cards.length;
+      step = 0;
+      render();
+    }
+
+    function shuffleCards() {
+      cards = shuffle(originalCards);
+      index = 0;
+      step = 0;
+      render();
+    }
+
+    function playSound() {
+      const c = cards[index];
+      const text = step === 2 ? c.w : c.k;
+
+      if (!('speechSynthesis' in window)) {
+        alert('이 브라우저에서는 음성 재생을 지원하지 않습니다. Chrome 또는 Safari에서 열어보세요.');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.75;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const jpVoice = voices.find(v => v.lang === 'ja-JP') || voices.find(v => v.lang.startsWith('ja'));
+      if (jpVoice) utterance.voice = jpVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+
+    shuffleCards();
+  </script>
+</body>
+</html>
